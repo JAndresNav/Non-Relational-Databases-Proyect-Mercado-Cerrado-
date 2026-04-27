@@ -12,6 +12,11 @@ Este proyecto desarrolla un Sistema de Recomendaciones para E-Commerce que perso
 
 ## MongoDB
 
+La interacción con MongoDB se centraliza en `connect.py` utilizando la librería `pymongo`. El flujo se divide en:
+* **Estructura:** En la carpeta `Mongo/` se encuentran los scripts de definición de colecciones e índices. Se aplican índices únicos para `email` en la colección de usuarios, e índices de texto y compuestos para `name` y `category` en productos para optimizar las búsquedas del catálogo.
+* **Población:** En `populate.py`, se cargan los documentos del catálogo y perfiles de usuario desde la carpeta `data/`. Se utiliza desnormalización en la colección `carts` (guardando nombre y precio al momento de la selección) para garantizar la integridad de los datos históricos.
+* **Consultas:** El archivo `main.py` utiliza el motor de agregación de MongoDB para calcular el "Top 10" de productos más populares mediante un pipeline de `$unwind`, `$match` y `$group`, resolviendo el requerimiento de popularidad para usuarios nuevos.
+
 ## Dgraph
 
 En Dgraph, la conexión se establece desde connect.py utilizando el cliente oficial pydgraph en Python.
@@ -19,3 +24,19 @@ Dentro de la carpeta Dgraph/ se define el schema con los predicados y sus índic
 Las consultas en main.py se ejecutan mediante DQL usando la terminal, donde cada opción del menú corresponde a un requerimiento funcional
 
 ## Cassandra
+
+El registro de logs masivos se gestiona mediante el driver `cassandra-driver` en `connect.py`.
+* **Esquema:** En la carpeta `Cassandra/` se encuentran los scripts `.cql` para la creación de las 7 tablas de actividad (vistas, búsquedas, logins, historial de precios, etc.). Se utiliza un diseño de "Query-First", donde la partición por `user_id` y el ordenamiento por clustering keys permiten lecturas de alta velocidad.
+* **Operación:** `populate.py` contiene la lógica para la ingesta de eventos masivos. La lectura en `main.py` recupera historiales cronológicos y eventos de interacción con el carrito sin necesidad de procesos de unión de tablas, aprovechando la arquitectura de columnas de Cassandra.
+
+## Estructura del Proyecto
+```text
+project-name/
+├── Cassandra/    # Scripts de creación de tablas (.cql)
+├── Mongo/        # Definición de esquemas e índices
+├── Dgraph/       # Esquema de predicados y tipos
+├── data/         # Archivos fuente (JSON/CSV)
+├── connect.py    # Gestión de conexiones a las 3 BD
+├── populate.py   # Plan detallado de población de datos
+├── main.py       # Menú de consultas funcionales
+└── README.md     # Documentación del proyecto
